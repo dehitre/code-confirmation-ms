@@ -92,7 +92,7 @@ def test_create_code_merge(get_address, get_user,use_by_user_address):
     assert use_code_response.json()["userId"] == data["userId"]
 
 
-def test_wrong_code_error(use_by_phone_address, get_phone):
+def test_wrong_code_error_by_phone(use_by_phone_address, get_phone):
     data = {"codeType": "REGISTRATION", "phone": get_phone, "requestType": "BY_PHONE"}
     headers = {'Content-Type': 'application/json'}
     use_code_response = requests.post(use_by_phone_address("0000"), headers=headers, data=json.dumps(data))
@@ -101,7 +101,7 @@ def test_wrong_code_error(use_by_phone_address, get_phone):
     assert use_code_response.json()["errorCode"] == "INCORRECT_CODE"
 
 
-def test_expired_code_error(get_address,use_by_phone_address, get_phone, change_time_of_code):
+def test_expired_code_error_by_phone(get_address,use_by_phone_address, get_phone, change_time_of_code):
     data = {"codeType": "REGISTRATION", "phone": get_phone, "requestType": "BY_PHONE"}
     headers = {'Content-Type': 'application/json'}
     create_code_response = requests.post(get_address, headers=headers, data=json.dumps(data))
@@ -112,5 +112,22 @@ def test_expired_code_error(get_address,use_by_phone_address, get_phone, change_
     assert use_code_response.json()["message"] == "Confirmation code expired"
     assert use_code_response.json()["errorCode"] == "CODE_EXPIRED"
 
+def test_wrong_code_error_by_user( get_user, use_by_user_address):
+    data = {"codeType": "MERGE", "userId": get_user, "requestType": "BY_USER_ID"}
+    headers = {'Content-Type': 'application/json'}
+    use_code_response = requests.post(use_by_user_address("0000"), headers=headers, data=json.dumps(data))
+    assert use_code_response.status_code == 400
+    assert use_code_response.json()["message"] == "Confirmation code is incorrect"
+    assert use_code_response.json()["errorCode"] == "INCORRECT_CODE"
 
 
+def test_expired_code_error_by_user(get_address, get_user,use_by_user_address,change_time_of_code):
+    data = {"codeType": "MERGE", "userId": get_user, "requestType": "BY_USER_ID"}
+    headers = {'Content-Type': 'application/json'}
+    create_code_response = requests.post(get_address, headers=headers, data=json.dumps(data))
+    code = create_code_response.json()["code"]
+    change_time_of_code(code)
+    use_code_response = requests.post(use_by_user_address(code), headers=headers, data=json.dumps(data))
+    assert use_code_response.status_code == 400
+    assert use_code_response.json()["message"] == "Confirmation code expired"
+    assert use_code_response.json()["errorCode"] == "CODE_EXPIRED"
